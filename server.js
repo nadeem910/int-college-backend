@@ -9,7 +9,7 @@ require('dotenv').config();
 
 //create my express server
 const app = express();
-const port = process.env.SERVER_PORT||8080;
+const port = process.env.PORT||8080;
 
 // app.use(cookieparser());
 app.use(cors());
