@@ -19,10 +19,6 @@ app.use(express.json());//to send and recieve JSON's
 const uri = process.env.ATLAS_URI||'mongodb+srv://ofer:ofer@cluster0.g23zl.mongodb.net/final-full-stack?retryWrites=true&w=majority';
 mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }
 );
-/********** */
-const path = require('path');
-app.use(express.static(path.join(__dirname,'../my-app/build')));
-/************* */
 
 const InfoRouter=require('./routes/info');
 app.use('/info',InfoRouter);
@@ -33,8 +29,11 @@ app.use('/lecturer',LecturerRouter);
 const StudentRouter=require('./routes/student');
 app.use('/student',StudentRouter);
 
+const ResetRouter=require('./routes/reset');
+app.use('/reset',ResetRouter);
+
 app.get('/',(req,res)=>{
-  res.sendFile(path.join(__dirname,'../my-app/build/index.html'))
+  res.send("hello to my server")
 })
 
 const connection = mongoose.connection;

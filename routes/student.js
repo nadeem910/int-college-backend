@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require("bcrypt");
 let Students = require('../models/student.model');
+let Info = require('../models/info.model');//delete inforamtion of student when we want to delete him .
 const jwt = require('jsonwebtoken');
 
 //for upload students photos
@@ -10,6 +11,7 @@ const upload = multer();
 //Piping the Multer stream into our file system
 const fs = require("fs");
 const { promisify } = require("util");
+// const { find } = require('../models/student.model');
 const pipeline = promisify(require("stream").pipeline);
 
 let refreshTokens = [];
@@ -82,7 +84,8 @@ async function forUploadPic(filee, fname, imgToDelete = "") {
                     file.stream,
                     fs.createWriteStream(`${__dirname}/../../public/studentImages/${fileName}-${file.originalName}`)
                 );
-                (imgToDelete !== "") ? fs.unlinkSync(`${__dirname}/../../public/studentImages/${imgToDelete}`) : "";
+                (imgToDelete !== ""&&imgToDelete!=="person.jpg") ? fs.unlinkSync(`${__dirname}/../../public/studentImages/${imgToDelete}`) : "";
+                /* imgToDelete!=="person.jpg" don't delete default image*/
                 return `${fileName}-${file.originalName}`
             }
 
@@ -200,6 +203,14 @@ router.delete('/', (req, res) => {
             res.json({ message: `Student doesn't delete,the error is :${err}` })
         }
         else {
+            (docs.pic !== "person.jpg") ? fs.unlinkSync(`${__dirname}/../../public/studentImages/${docs.pic}`) : "";
+            //docs.pic !== "person.jpg" : don't delete default image
+            Info.deleteMany({id:docs._id},(err)=>{
+                //to delete informatio og same student from informayion table
+                if(err){
+                    res.json({ message: "faild to delete student attendances" });
+                }
+            })
             res.json({ message: "Student Deleted" });
         }
     });
@@ -241,9 +252,9 @@ router.post('/loginByGmail', (req, res) => {
                     message: "Auth failed"
                 });
             }
-            let lecturerid = { id: emails[0]._id }
-            let accessToken = generateAccessToken(lecturerid)
-            let refreshToken = jwt.sign(lecturerid, process.env.REFRESH_TOKEN_SECRET)
+            let studentid = { id: emails[0]._id }
+            let accessToken = generateAccessToken(studentid)
+            let refreshToken = jwt.sign(studentid, process.env.REFRESH_TOKEN_SECRET)
             refreshTokens.push(refreshToken)
             res.json({ accessToken: accessToken, refreshToken: refreshToken, message: "auth succesfull" })
         });
@@ -279,6 +290,25 @@ async function addToDB() {
         Student.save().then(() => { console.log("1") }).catch((err) => { console.log(err) });
     })
 }
+router.get('/getStudentInfo', (req, res) => {
+    Students.findById(req.query.id || "123456789", function (err, docs) {
+        if (err) {
+            res.json({ message: `faild to get user ,the error is :${err}` })
+        }
+        else
+            if (docs._id !== null) {
+                res.json({ student: docs });
+            }
+    });
+});
+
+router.post('/areYouStudent', (req, res) => {
+    let refreshToken = req.body.RT
+    if (refreshTokens.includes(refreshToken))
+        return res.json({ status: 'yes' });
+    return res.json({ status: 'no' });
+
+});
 //get student from Api :https://randomuser.me/api/?results=27
 let data = {
     "results": [
@@ -1802,24 +1832,5 @@ let data = {
         "version": "1.3"
     }
 }
-router.get('/getStudentInfo', (req, res) => {
-    Students.findById(req.query.id || "123456789", function (err, docs) {
-        if (err) {
-            res.json({ message: `faild to get user ,the error is :${err}` })
-        }
-        else
-            if (docs._id !== null) {
-                res.json({ student: docs });
-            }
-    });
-});
-
-router.post('/areYouStudent', (req, res) => {
-    let refreshToken = req.body.RT
-    if (refreshTokens.includes(refreshToken))
-        return res.json({ status: 'yes' });
-    return res.json({ status: 'no' });
-
-});
 module.exports = router;
 

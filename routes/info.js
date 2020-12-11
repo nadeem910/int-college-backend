@@ -3,6 +3,13 @@ const bcrypt = require("bcrypt");
 let Info = require('../models/info.model');
 const jwt = require('jsonwebtoken');
 
+router.post('/giveme',(req,res)=>{//test for me to check deleting information
+    Info.findById({ _id: req.body._id })
+    .then(infoo=>{
+        res.json({message:infoo})
+    });
+
+})
 router.post('/add', (req, res) => {
     Info.find({ id: req.body.id, date: req.body.date })
         .then(infos => {
